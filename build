@@ -1,0 +1,46 @@
+#!/bin/bash
+
+DIR=$PWD
+
+export TOOLCHAIN_DIR=$HOME/vorkChain
+export BUILD_DIR=$HOME/Dropbox/Public
+
+rm Update.zip/kernel/zImage
+rm -rf Update.zip/system/lib/modules/*
+
+export ARM_EABI=$TOOLCHAIN_DIR/toolchain/bin/arm-eabi-
+
+echo Building the kernel
+make ARCH=arm CROSS_COMPILE=$ARM_EABI vorkKernel_defconfig
+ARCH=arm CROSS_COMPILE=$ARM_EABI make -j`grep 'processor' /proc/cpuinfo | wc -l`
+make ARCH=arm CROSS_COMPILE=$ARM_EABI INSTALL_MOD_PATH=$DIR/Update.zip/system modules_install
+
+export localVersion=`cat .config | fgrep CONFIG_LOCALVERSION= | cut -f 2 -d = | sed s/\"//g`
+export linuxVersion=`cat .config | fgrep "Linux kernel version: "| cut -c25-34 | sed s/\"//g`
+export VERSION=$linuxVersion$localVersion
+
+for module in `find $DIR/Update.zip/system/lib/modules/$VERSION/kernel/ -name *.ko`
+do
+cp $module $DIR/Update.zip/system/lib/modules/
+done
+rm -r $DIR/Update.zip/system/lib/modules/$VERSION
+
+cp arch/arm/boot/zImage Update.zip/kernel
+cd Update.zip/
+
+echo Making update.zip ...
+zip -r -y -q update *
+echo
+echo update.zip created
+
+NOW=$(date +"%Y%m%d")
+signed_file=vorkKernel-Xoom-"$NOW".zip
+
+if [ -d $BUILD_DIR/Xoom ]; then
+	mv update.zip $BUILD_DIR/Xoom/$signed_file
+else
+	mkdir $BUILD_DIR/Xoom
+	mv update.zip $BUILD_DIR/Xoom/$signed_file
+fi
+
+cd $DIR
