@@ -91,8 +91,8 @@ choice
     config DEFAULT_SIO
         bool "SIO" if IOSCHED_SIO=y
 
-    config DEFAULT_BFQ
-	bool "BFQ" if IOSCHED_BFQ=y
+	config DEFAULT_BFQ
+		bool "BFQ" if IOSCHED_BFQ=y
 
 	config DEFAULT_NOOP
 		bool "No-op"
